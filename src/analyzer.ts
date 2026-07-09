@@ -28,3 +28,16 @@ export const getAllDependencies  = async(packageJsonPath:string)=>{
      return { prodDeps, devDeps, allDeclared, duplicates };
 }
 
+
+export  const getImportedPackages  = (fileGlobPattern:string = "src/**/*{.ts,.tsx,.js,.jsx}"):Set<string> =>{
+    const project =  new Project({compilerOptions:{allowJs:true}});
+    project.addSourceFileAtPath(fileGlobPattern)
+    
+    const importedPackages = new Set<string>()
+    
+    // from here write  Helper to extract base name
+
+
+    return importedPackages;
+}
+
