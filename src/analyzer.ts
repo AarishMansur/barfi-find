@@ -6,13 +6,14 @@ interface DeclaredDeps{
     prodDeps : string[],
     devDeps:string[],
     allDeclared:Set<string>,
-    duplicatedDeps:string[]
+    duplicates:string[]
 }
 
 interface AnalysisReport{
     used:string[],
-    unusued : string[],
-    duplicatd:string[],
+    unused : string[],
+    duplicates:string[],
+    missing:string[]
 }
 
 export const getAllDependencies  = (packageJsonPath:string = "./package.json"): DeclaredDeps =>{
@@ -24,9 +25,9 @@ export const getAllDependencies  = (packageJsonPath:string = "./package.json"): 
     const prodDeps = packageData.dependencies ? Object.keys(packageData.dependencies) : []
     const devDeps = packageData.devdependencies ? Object.keys(packageData.devdependencies):[]
     const allDeclared  = new  Set([...prodDeps,...devDeps])
-     const duplicatedDeps = prodDeps.filter(dep=>devDeps.includes(dep)) 
+     const duplicates = prodDeps.filter(dep=>devDeps.includes(dep)) 
 
-     return { prodDeps, devDeps, allDeclared, duplicatedDeps };
+     return { prodDeps, devDeps, allDeclared, duplicates };
 }
 
 
@@ -80,3 +81,30 @@ export  const getImportedPackages  = (fileGlobPattern:string = "src/**/*{.ts,.ts
     return importedPackages;
 }
 
+
+export const analyzeDepencies  = ():AnalysisReport=>{
+  try {
+     const declared = getAllDependencies("./package.json");
+        const imported = getImportedPackages("src/**/*{.ts,.tsx,.js,.jsx}");
+         const used = [...declared.allDeclared].filter(dep => imported.has(dep));
+        const unused = [...declared.allDeclared].filter(dep => !imported.has(dep));
+        const missing = [...imported].filter(dep => !declared.allDeclared.has(dep));
+
+          console.log("\n📊 --- ENGINE REPORT --- 📊");
+        console.log(`📦 Active Packages Used:    ${used.length}`);
+        if (declared.duplicates.length > 0) console.warn(`🚨 Duplicates Flagged:      `, declared.duplicates);
+        if (unused.length > 0) console.warn(`⚠️ Unused Dependencies:    `, unused);
+        if (missing.length > 0) console.error(`❌ Missing Dependencies:   `, missing);
+
+        return {
+            used,
+            unused,
+            missing,
+            duplicates: declared.duplicates
+        };
+
+  } catch (error:any) {
+     console.error("❌ Diagnostic analysis pipeline failed:", error.message);
+        throw error;
+  }
+}
