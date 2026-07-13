@@ -16,14 +16,14 @@ interface AnalysisReport{
     missing:string[]
 }
 
-export const getAllDependencies  = (packageJsonPath:string = "./package.json"): DeclaredDeps =>{
-    const resolvePath =  path.resolve(packageJsonPath);
+export const getAllDependencies  = (targetDir:string): DeclaredDeps =>{
+    const resolvePath =  path.join(targetDir,"package.json");
     if(!resolvePath) {
         throw new  Error("Could not find package.json  in directory")
     }
     const packageData = JSON.parse(fs.readFileSync(resolvePath,'utf-8'))
     const prodDeps = packageData.dependencies ? Object.keys(packageData.dependencies) : []
-    const devDeps = packageData.devdependencies ? Object.keys(packageData.devdependencies):[]
+    const devDeps = packageData.devDependencies  ? Object.keys(packageData.devdependencies):[]
     const allDeclared  = new  Set([...prodDeps,...devDeps])
      const duplicates = prodDeps.filter(dep=>devDeps.includes(dep)) 
 
@@ -31,20 +31,21 @@ export const getAllDependencies  = (packageJsonPath:string = "./package.json"): 
 }
 
 
-export  const getImportedPackages  = (fileGlobPattern:string = "src/**/*{.ts,.tsx,.js,.jsx}"):Set<string> =>{
+export  const getImportedPackages  = (targetDir:string):Set<string> =>{
     const project =  new Project({compilerOptions:{allowJs:true}});
-    project.addSourceFileAtPath(fileGlobPattern)
     
+    const globalPattern =  path.join(targetDir, "src/**/*{.ts,.tsx,.js,.jsx}")
+    project.addSourceFileAtPath(globalPattern)
     const importedPackages = new Set<string>()
 
-    // Helper to extract base names (e.g., "lodash/fp" -> "lodash", "@types/node" -> "@types/node")
+    
     const getBasePackege = (importstring:string):string=>{
      if(importstring.startsWith(".") || importstring.startsWith("/")) return "";
      const parts = importstring.split("/")
      return importstring.startsWith("@") ? `${parts[0]}/${parts[1]}` : `${parts[0]}`
     }
 
-    // Standard ES Imports (import x from 'y')
+   
     const sourceFiles = project.getSourceFiles();
 
      for(const sourceFile of sourceFiles){
@@ -53,7 +54,6 @@ export  const getImportedPackages  = (fileGlobPattern:string = "src/**/*{.ts,.ts
         if(pkg) importedPackages.add(pkg)
        });
 
-       // ES Export From statements (export * from 'y')
       sourceFile.getExportDeclarations().forEach(exp=>{
           const specifer  = exp.getModuleSpecifierValue()
           if(specifer){
@@ -62,7 +62,7 @@ export  const getImportedPackages  = (fileGlobPattern:string = "src/**/*{.ts,.ts
           }
       })
 
-       // CommonJS require() and Dynamic import()
+       
        sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression).forEach(call=>{
            const called = call.getExpression().getText()
            if(called ==="require" || called ==="import"){
@@ -74,18 +74,15 @@ export  const getImportedPackages  = (fileGlobPattern:string = "src/**/*{.ts,.ts
            }
        })
      }
-
      
-      
-
     return importedPackages;
 }
 
 
-export const analyzeDepencies  = ():AnalysisReport=>{
+export const analyzeDepencies  = (targetDir:string):AnalysisReport=>{
   try {
-     const declared = getAllDependencies("./package.json");
-        const imported = getImportedPackages("src/**/*{.ts,.tsx,.js,.jsx}");
+     const declared = getAllDependencies(targetDir);
+        const imported = getImportedPackages(targetDir);
          const used = [...declared.allDeclared].filter(dep => imported.has(dep));
         const unused = [...declared.allDeclared].filter(dep => !imported.has(dep));
         const missing = [...imported].filter(dep => !declared.allDeclared.has(dep));

@@ -1,9 +1,12 @@
 {
-  "name": "barfi-find",
+  "name": "@rsur-og/barfi",
   "version": "1.0.0",
   "description": "A Nodejs CLI tool",
-  "main": "index.js",
+  "main": "dist/index.js",
   "type": "module",
+  "bin": {
+    "barfi": "./dist/index.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch src/index.ts",
