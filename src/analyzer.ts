@@ -23,7 +23,7 @@ export const getAllDependencies  = (targetDir:string): DeclaredDeps =>{
     }
     const packageData = JSON.parse(fs.readFileSync(resolvePath,'utf-8'))
     const prodDeps = packageData.dependencies ? Object.keys(packageData.dependencies) : []
-    const devDeps = packageData.devDependencies  ? Object.keys(packageData.devdependencies):[]
+    const devDeps = packageData.devDependencies ? Object.keys(packageData.devDependencies) : []
     const allDeclared  = new  Set([...prodDeps,...devDeps])
      const duplicates = prodDeps.filter(dep=>devDeps.includes(dep)) 
 
@@ -34,8 +34,9 @@ export const getAllDependencies  = (targetDir:string): DeclaredDeps =>{
 export  const getImportedPackages  = (targetDir:string):Set<string> =>{
     const project =  new Project({compilerOptions:{allowJs:true}});
     
-    const globalPattern =  path.join(targetDir, "src/**/*{.ts,.tsx,.js,.jsx}")
-    project.addSourceFileAtPath(globalPattern)
+    const targetDirPosix = targetDir.replace(/\\/g, '/');
+    const globalPattern = `${targetDirPosix}/src/**/*{.ts,.tsx,.js,.jsx}`;
+    project.addSourceFilesAtPaths(globalPattern);
     const importedPackages = new Set<string>()
 
     
