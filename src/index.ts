@@ -5,7 +5,7 @@ import { Command } from "commander";
 import { showBanner } from "./banner";
 import { analyzeDepencies } from "./analyzer";
 import path from "path";
-import * as p from "@clack/prompts"
+import * as p from "@clack/prompts";
 
 const program = new Command();
 
